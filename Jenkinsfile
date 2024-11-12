@@ -7,8 +7,8 @@ pipeline {
     }
 
     environment {
-        GIT_URL = 'https://github.com/techmsq/registration-app'
-        GIT_BRANCH = 'main'
+        MAVEN_HOME = tool 'Maven3'
+        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
     }
 
     stages {
@@ -20,33 +20,36 @@ pipeline {
 
         stage('Checkout from SCM') {
             steps {
-                git branch: "${GIT_BRANCH}", credentialsId: 'github', url: "${GIT_URL}"
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/techmsq/register-app'
             }
         }
 
         stage('Build Application') {
             steps {
-                sh 'mvn clean package'
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn clean package -B"
+                }
             }
         }
 
         stage('Test Application') {
             steps {
-                sh 'mvn test'
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn test -B"
+                }
             }
         }
     }
 
     post {
         always {
-            echo 'Cleaning up workspace after the build.'
             cleanWs()
         }
         success {
             echo 'Build and tests completed successfully.'
         }
         failure {
-            echo 'Build or tests failed.'
+            echo 'Build or tests failed. Please check the logs for details.'
         }
     }
 }
