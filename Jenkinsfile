@@ -9,7 +9,7 @@ pipeline {
         MAVEN_VERSION = '3.9.5'
         MAVEN_HOME = "${WORKSPACE}/maven"
         PATH = "${MAVEN_HOME}/bin:${env.PATH}"
-        GIT_URL = 'https://github.com/techmsq/register-app'
+        GIT_URL = 'https://github.com/techmsq/registration-app'
         GIT_BRANCH = 'main'
     }
 
