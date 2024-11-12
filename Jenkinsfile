@@ -3,12 +3,14 @@ pipeline {
 
     tools {
         jdk 'Java17'
-        maven 'Maven3'
     }
 
     environment {
-        MAVEN_HOME = tool 'Maven3'
+        MAVEN_VERSION = '3.9.5'
+        MAVEN_HOME = "${WORKSPACE}/maven"
         PATH = "${MAVEN_HOME}/bin:${env.PATH}"
+        GIT_URL = 'https://github.com/techmsq/register-app'
+        GIT_BRANCH = 'main'
     }
 
     stages {
@@ -18,9 +20,25 @@ pipeline {
             }
         }
 
+        stage('Install Maven') {
+            steps {
+                script {
+                    echo "Installing Maven ${MAVEN_VERSION}..."
+                    sh '''
+                        MAVEN_DOWNLOAD_URL="https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+                        curl -sSL ${MAVEN_DOWNLOAD_URL} -o maven.tar.gz
+                        mkdir -p ${MAVEN_HOME}
+                        tar -xzf maven.tar.gz -C ${MAVEN_HOME} --strip-components=1
+                        rm maven.tar.gz
+                        chmod +x ${MAVEN_HOME}/bin/mvn
+                    '''
+                    sh "${MAVEN_HOME}/bin/mvn -v"
+                }
+            }
+        }
+
         stage('Debug Environment') {
             steps {
-                echo 'Checking environment configuration...'
                 sh 'env'
                 sh 'mvn -v'
                 sh 'java -version'
@@ -31,7 +49,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        git branch: 'main', credentialsId: 'github', url: 'https://github.com/techmsq/registration-app'
+                        git branch: "${GIT_BRANCH}", credentialsId: 'github', url: "${GIT_URL}"
                     } catch (Exception e) {
                         echo "SCM checkout failed: ${e}"
                         error("Checkout failed. Please verify Git credentials and repository URL.")
@@ -44,7 +62,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "${MAVEN_HOME}/bin/mvn clean package -B"
+                        sh 'mvn clean package -B'
                     } catch (Exception e) {
                         echo "Build failed: ${e}"
                         error("Build stage failed. Check Maven configuration and logs for details.")
@@ -57,7 +75,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "${MAVEN_HOME}/bin/mvn test -B"
+                        sh 'mvn test -B'
                     } catch (Exception e) {
                         echo "Test execution failed: ${e}"
                         error("Test stage failed. Review the test logs for errors.")
@@ -69,7 +87,6 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up workspace...'
             cleanWs()
         }
         success {
